@@ -182,7 +182,7 @@ plt.imshow(img)
 plt.show()
 """
 
-video_name = "project_video"
+video_name = "test_video"
 video_output_name = video_name + '_annotated.mp4'
 video = VideoFileClip(video_name + ".mp4")
 tracker = Tracker()

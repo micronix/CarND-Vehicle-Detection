@@ -1,2 +1,4 @@
 vehicles
 non-vehicles
+.ipynb_checkpoints
+__pycache__
