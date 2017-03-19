@@ -9,21 +9,33 @@ from scipy.ndimage.measurements import label
 from collections import deque
 import pickle
 
+def visualize(fig, rows, cols, images, titles):
+    for i, img in enumerate(images):
+        plt.subplot(rows, cols, i + 1)
+        plt.title(i+1)
+        plt.axis('off')
+        img_dims = len(img.shape)
+        if img_dims < 3:
+            plt.imshow(img, cmap='hot')
+        else:
+            plt.imshow(img)
+        plt.title(titles[i])
+
 class Tracker:
     def __init__(self):
         model = joblib.load('model.pkl')
         self.svc = model['svc']
         self.X_scaler = model['scaler']
-        self.orient = model['orient']
+        #self.orient = model['orient']
         self.pixels = model['pixels']
         self.pix_per_cell = model['pixels']
-        self.cells = model['cells']
-        self.spatial_size = model['size']
-        self.hist_bins = model['bins']
-        self.history = deque(maxlen=5)
+        #self.cells = model['cells']
+        #self.spatial_size = model['size']
+        #self.hist_bins = model['bins']
+        self.history = deque(maxlen=20)
 
-        self.ystart = 400
-        self.ystop = 680
+        #self.ystart = 400
+        #self.ystop = 680
 
     def find_and_draw_detections(self, frame):
         vehicles = self.find_cars(frame)
@@ -35,7 +47,7 @@ class Tracker:
     def process(self, frame):
         vehicles = self.find_cars(frame)
         self.history.append(vehicles)
-        labels, heatmap = self.get_labels(frame.shape, 7)
+        labels, heatmap = self.get_labels(frame, frame.shape, 20)
         self.draw_labeled_bboxes(frame, labels)
         self.draw_text(frame, str(labels[1]) + " cars", 20, 20)
         return frame
@@ -43,15 +55,58 @@ class Tracker:
     def draw_text(self, frame, text, x, y):
         cv2.putText(frame, text, (x, y), cv2.FONT_HERSHEY_SIMPLEX, .8, (255, 255, 255), 2)
 
-    def get_labels(self, shape, threshold):
+    def get_labels(self, frame, shape, threshold):
         heatmap = np.zeros((shape[0], shape[1]))
 
         self.add_heat(heatmap)
         heatmap[heatmap < threshold] = 0
         heatmap = np.clip(heatmap, 0, 255)
-        #plt.imshow(heatmap, cmap='hot')
-        #plt.show()
-        return label(heatmap), heatmap
+
+        labels = label(heatmap)
+
+        global frame_count
+        frame_count += 1
+        if False:#frame_count ==  25:
+            self.heatmap_visualization(frame, shape, threshold)
+
+        return labels, heatmap
+
+    def heatmap_visualization(self, frame, shape, threshold):
+        images = []
+        titles = []
+        i = 0
+        fig = plt.figure(figsize = (12, 12))
+        for boxes in self.history:
+            heatmap = np.zeros((shape[0], shape[1]))
+            for box in boxes:
+                heatmap[box[1]:box[3], box[0]:box[2]] += 1
+            heatmap = np.clip(heatmap, 0, 255)
+            #heatmap[heatmap < threshold] = 0
+            vis_heat = np.copy(heatmap / np.max(heatmap) * 255).astype(np.uint8)
+            print('maxes', np.max(heatmap), np.max(vis_heat))
+            vis_heat = cv2.applyColorMap(vis_heat, cv2.COLORMAP_HOT)
+            images.append(vis_heat)
+            titles.append("frame " + str(frame_count - i))
+            i += 1
+
+        # mapping
+        heatmap = np.zeros((shape[0], shape[1]))
+        self.add_heat(heatmap)
+        heatmap[heatmap < threshold] = 0
+        heatmap = np.clip(heatmap, 0, 255)
+        images.append(heatmap)
+        titles.append("integrated")
+
+        visualize(fig, 7, 3, images, titles)
+        plt.show()
+
+        labels = label(heatmap)
+        plt.imshow(labels[0], cmap='gray')
+        plt.show()
+
+        self.draw_labeled_bboxes(frame, labels)
+        plt.imshow(frame)
+        plt.show()
 
     def draw_labeled_bboxes(self, img, labels):
         # Iterate through all detected cars
@@ -182,6 +237,7 @@ plt.imshow(img)
 plt.show()
 """
 
+frame_count = 0
 video_name = "test_video"
 video_output_name = video_name + '_annotated.mp4'
 video = VideoFileClip(video_name + ".mp4")

@@ -23,13 +23,10 @@ The goals / steps of this project are the following:
 [image11]: ./output_images/detections3.png
 [image12]: ./output_images/detections4.png
 [image13]: ./output_images/detections5.png
-[image22]: ./examples/HOG_example.jpg
-[image23]: ./examples/sliding_windows.jpg
-[image24]: ./examples/sliding_window.jpg
-[image25]: ./examples/bboxes_and_heat.png
-[image26]: ./examples/labels_map.png
-[image27]: ./examples/output_bboxes.png
-[video1]: ./project_video.mp4
+[image14]: ./output_images/heatmaps.png
+[image15]: ./output_images/labels.png
+[image16]: ./output_images/boxes.png
+[video1]: ./project_video_annotated.mp4
 
 ### Histogram of Oriented Gradients (HOG)
 
@@ -118,7 +115,7 @@ At first I implemented the window search shown in class with 4 different scales 
 - There is no reason to have small windows search lower in the image, because cars will only appear small in the image when they are far away. Therefore we only have to search using small windows in a narrow band near the top of sky in the flat image.
 - The lower we are in the image, a larger window makes more sense to search.
 
-We first define the scales to search by and the regions in the image we will search at those scales. The code for this is found in tracker.py lines 77-95. We search at the following scales in the following regions:
+We first define the scales to search by and the regions in the image we will search at those scales. The code for this is found in tracker.py lines 132-150. We search at the following scales in the following regions:
 
 | scale | ystart | ystop |
 |:--:|:--:|:--|
@@ -128,7 +125,7 @@ We first define the scales to search by and the regions in the image we will sea
 | 3.3  | 435 | 680 |
 
 
-The code for the window search at on scale is found in tracker.py lines 97-174. We first resize the image by scaling it down, so that our window size is always 64x64 pixels. Once we resize our image we create an extractor object which stores the whole image hog features. We use a stepping size of 2 cells_per_step for our window search.
+The code for the window search at on scale is found in tracker.py lines 152-229. We first resize the image by scaling it down, so that our window size is always 64x64 pixels. Once we resize our image we create an extractor object which stores the whole image hog features. We use a stepping size of 2 cells_per_step for our window search.
 
 The sliding window search searches only a narrow band between pixel posision `400` and `680` vertically.
 
@@ -165,15 +162,19 @@ I recorded the positions of positive detections in each frame of the video.  Fro
 
 Here's an example result showing the heatmap from a series of frames of video, the result of `scipy.ndimage.measurements.label()` and the bounding boxes then overlaid on the last frame of video:
 
-### Here are six frames and their corresponding heatmaps:
+What gave me the best results was to save the last 20 heatmap frames. Then in the current frame, for each pixel I added the value of the last 20 heatmaps and had a threshold of 20.
 
-![alt text][image5]
+Below you can see the previous 20 frames and then the last image shows the integration of all those frames:
 
-### Here is the output of `scipy.ndimage.measurements.label()` on the integrated heatmap from all six frames:
-![alt text][image6]
+![alt text][image14]
 
-### Here the resulting bounding boxes are drawn onto the last frame in the series:
-![alt text][image7]
+Here is the output of `scipy.ndimage.measurements.label()` on the integrated heatmap from all twenty frames:
+
+![alt text][image15]
+
+Here the resulting bounding boxes are drawn onto the last frame in the series:
+
+![alt text][image16]
 
 
 ---
